@@ -1,5 +1,5 @@
 ---
-title: Welcome to Quartz
+title: Welcome to Sejong's 2nd Brain
 ---
 
 This is a blank Quartz installation.
