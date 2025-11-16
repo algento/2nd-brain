@@ -20,21 +20,31 @@ def log(msg: str):
 def convert_obsidian_image_syntax(text: str) -> str:
     """
     옵시디언 스타일:
-      ![Title|center|700](20251110-201618.png)
-    -> Quartz/Markdown 스타일:
-      ![Title](20251110-201618.png){ width=700 .center }
+      ![Title|center|700](image.png)
+
+    변환 결과(Quartz에서 쓰일 HTML):
+
+      <p class="img-center">
+        <img src="image.png"
+             alt="Title"
+             style="max-width:700px; width:100%;">
+      </p>
+
+    - | 뒤의 토큰 중:
+      * 숫자만 있는 건 width(px)로
+      * center/left/right 는 정렬 정보로 사용
     """
 
     def _replace(m: re.Match) -> str:
         raw_alt = m.group(1)  # "Title|center|700"
-        path = m.group(2).strip()
+        path = m.group(2).strip()  # "image.png" 같은 부분 (원본 그대로 유지)
 
-        # alt 파싱: "제목|center|700" 형태
-        parts = [p.strip() for p in raw_alt.split("|")]
-
+        # alt / 옵션 분해
+        parts = [p.strip() for p in raw_alt.split("|")] if raw_alt else []
         alt = parts[0] if parts else ""
-        align = None
-        width = None
+
+        align = None  # 'center', 'left', 'right' 중 하나
+        width = None  # 숫자(px)
 
         for p in parts[1:]:
             low = p.lower()
@@ -43,21 +53,27 @@ def convert_obsidian_image_syntax(text: str) -> str:
             elif p.isdigit():
                 width = int(p)
 
-        # 기본 Markdown
-        base = f"![{alt}]({path})"
-
-        # 속성(Pandoc-style attribute)
-        attrs = []
+        # <img> 태그 구성
+        style_parts = []
         if width is not None:
-            attrs.append(f"width={width}")
-        if align == "center":
-            attrs.append(".center")
-        # left/right도 필요하면 여기서 클래스 추가 가능
+            style_parts.append(f"max-width:{width}px")
+            style_parts.append("width:100%")
+        style_attr = ""
+        if style_parts:
+            style_attr = f' style="{"; ".join(style_parts)}"'
 
-        if attrs:
-            return f"{base}{{ {' '.join(attrs)} }}"
+        img_html = f'<img src="{path}" alt="{alt}"{style_attr}>'
+
+        # 정렬에 따라 감싸는 태그 결정
+        if align == "center":
+            # 중앙 정렬용 래퍼
+            return f'<p class="img-center">\n  {img_html}\n</p>'
+        elif align in ("left", "right"):
+            # 필요하면 나중에 CSS로 제어 가능
+            return f'<p class="img-{align}">\n  {img_html}\n</p>'
         else:
-            return base
+            # 정렬 정보 없으면 그냥 img만
+            return img_html
 
     return MD_IMAGE_PATTERN.sub(_replace, text)
 
@@ -122,15 +138,15 @@ def sync_publish_to_quartz():
             continue
 
         if src.suffix.lower() == ".md":
-            # 마크다운: 내용 읽고, 이미지 문법 변환 후 저장
-            text = src.read_text(encoding="utf-8")
-            converted = convert_obsidian_image_syntax(text)
-
             # 변환된 텍스트에서 이미지 파일명 수집
-            imgs = collect_images_from_text(converted)
+            original = src.read_text(encoding="utf-8")
+            imgs = collect_images_from_text(original)
             if imgs:
                 log(f"[{rel}] 이미지 참조: {', '.join(sorted(imgs))}")
             used_filenames |= imgs
+
+            # 마크다운: 내용 읽고, 이미지 문법 변환 후 저장
+            converted = convert_obsidian_image_syntax(original)
 
             dst.write_text(converted, encoding="utf-8")
         else:
