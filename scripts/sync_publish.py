@@ -4,31 +4,62 @@ import shutil
 import sys
 from pathlib import Path
 
-# Obsidian 볼트 루트
 VAULT_ROOT = Path("~/Github/docs/obsidian-sync").expanduser()
-
-# Quartz 루트
 QUARTZ_ROOT = Path("~/Github/docs/quartz").expanduser()
-
-# 공개용 문서 폴더
 PUBLISH_DIR = VAULT_ROOT / "Publish"
-
-# 모든 첨부 이미지가 모여 있는 폴더
 ATTACH_DIR = VAULT_ROOT / "Attachments"
-
-# Quartz content 폴더
 CONTENT_DIR = QUARTZ_ROOT / "content"
-
-# Quartz에서 이미지가 위치할 폴더
 OUT_ATTACH_DIR = CONTENT_DIR / "Attachments"
-
-# ====== 여기부터는 그대로 써도 됨 ======
-# 예: ![Metric of Self-Driving Simulation|center|700](20251110-201618.png)
-MD_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
+MD_IMAGE_PATTERN = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 
 
 def log(msg: str):
     print(msg, file=sys.stderr)
+
+
+def convert_obsidian_image_syntax(text: str) -> str:
+    """
+    옵시디언 스타일:
+      ![Title|center|700](20251110-201618.png)
+    -> Quartz/Markdown 스타일:
+      ![Title](20251110-201618.png){ width=700 .center }
+    """
+
+    def _replace(m: re.Match) -> str:
+        raw_alt = m.group(1)  # "Title|center|700"
+        path = m.group(2).strip()
+
+        # alt 파싱: "제목|center|700" 형태
+        parts = [p.strip() for p in raw_alt.split("|")]
+
+        alt = parts[0] if parts else ""
+        align = None
+        width = None
+
+        for p in parts[1:]:
+            low = p.lower()
+            if low in ("center", "left", "right"):
+                align = low
+            elif p.isdigit():
+                width = int(p)
+
+        # 기본 Markdown
+        base = f"![{alt}]({path})"
+
+        # 속성(Pandoc-style attribute)
+        attrs = []
+        if width is not None:
+            attrs.append(f"width={width}")
+        if align == "center":
+            attrs.append(".center")
+        # left/right도 필요하면 여기서 클래스 추가 가능
+
+        if attrs:
+            return f"{base}{{ {' '.join(attrs)} }}"
+        else:
+            return base
+
+    return MD_IMAGE_PATTERN.sub(_replace, text)
 
 
 def collect_images_from_text(text: str) -> set[str]:
@@ -36,7 +67,7 @@ def collect_images_from_text(text: str) -> set[str]:
 
     # ![alt](path) 패턴에서 path만 추출
     for m in MD_IMAGE_PATTERN.finditer(text):
-        raw_path = m.group(1).strip()  # "20251110-201618.png" 같은 부분
+        raw_path = m.group(2).strip()  # "20251110-201618.png" 같은 부분
 
         # 웹 URL은 무시
         if raw_path.startswith("http://") or raw_path.startswith("https://"):
@@ -79,16 +110,33 @@ def sync_publish_to_quartz():
     log("Publish -> content 복사")
     shutil.copytree(PUBLISH_DIR, CONTENT_DIR)
 
-    # 2) content 아래 모든 .md에서 사용된 이미지 파일명 수집
+    # 2) Publish 아래 파일을 하나씩 처리
     used_filenames: set[str] = set()
 
-    for md_path in CONTENT_DIR.rglob("*.md"):
-        text = md_path.read_text(encoding="utf-8")
-        imgs = collect_images_from_text(text)
-        if imgs:
-            rel = md_path.relative_to(CONTENT_DIR)
-            log(f"[{rel}] 이미지 참조: {', '.join(sorted(imgs))}")
-        used_filenames |= imgs
+    for src in PUBLISH_DIR.rglob("*"):
+        rel = src.relative_to(PUBLISH_DIR)
+        dst = CONTENT_DIR / rel
+
+        if src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+            continue
+
+        if src.suffix.lower() == ".md":
+            # 마크다운: 내용 읽고, 이미지 문법 변환 후 저장
+            text = src.read_text(encoding="utf-8")
+            converted = convert_obsidian_image_syntax(text)
+
+            # 변환된 텍스트에서 이미지 파일명 수집
+            imgs = collect_images_from_text(converted)
+            if imgs:
+                log(f"[{rel}] 이미지 참조: {', '.join(sorted(imgs))}")
+            used_filenames |= imgs
+
+            dst.write_text(converted, encoding="utf-8")
+        else:
+            # 기타 파일(pdf 등)은 그대로 복사
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
 
     log(f"총 참조된 이미지 파일 수: {len(used_filenames)}")
 
