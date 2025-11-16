@@ -14,3 +14,4 @@ modified: 2025-11-16 13:32
 ### Autonomous Driving
 
 - [[Autonomous Vehicle/(Talk) Simulation-Waabi Tutorial on Self-Driving Cars]]
+- [[Autonomous Vehicle/(Talk) Tesla-Foundation Model for FSD]]
