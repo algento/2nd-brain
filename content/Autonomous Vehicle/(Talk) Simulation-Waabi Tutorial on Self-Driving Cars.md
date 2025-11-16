@@ -1,7 +1,7 @@
 ---
 title: (Talk) Simulation-Waabi Tutorial on Self-Driving Cars
 created: 2025-11-10 19:29
-modified: 2025-11-16 11:14
+modified: 2025-11-16 11:56
 tags:
   - AV
   - Talk
@@ -71,7 +71,7 @@ mocs:
     - 피드백 (Feedback): 충돌, 안전, 편안함, 정확 등의 평가지표 계산하여 시스템 성능을 평가하고 실패 지점을 식별할 수 있어야 함.
     - 확장성 (Scalable): 낮은 비용으로 실행할 수 있어야 함.
 
-![Metric of Self-Driving Simulation|center|700](20251110-201618.png)
+![Metric of Self-Driving Simulation](20251110-201618.png){ width=700 .center }
 
 ## Waabi World Engine
 
@@ -88,25 +88,25 @@ mocs:
     - 현실적인 센서 입력이나 제어 출력을 모사하기 위한 모듈로 보이며, 좀 더 현실적인 시뮬레이션이 가능하도록 만들 것으로 예상된다.
     - 실제로 어떻게 latency를 모델링하고 주입하는지에 대해서는 자세히 설명하지는 않는다.
 
-![Waabi World Engine|center|700](Attachments/20251110-203337.png)
+![Waabi World Engine](Attachments/20251110-203337.png){ width=700 .center }
 
 #### Full Open Loop Simulation
 
-![Full Open-loop Simulation|center|700](Attachments/20251110-204605.png)
+![Full Open-loop Simulation](Attachments/20251110-204605.png){ width=700 .center }
 
 #### Motion Planner Closed-Loop Simulation
 
-![Motion-Planner Closed-Loop Simulation|center|700](Attachments/20251110-204625.png)
+![Motion-Planner Closed-Loop Simulation](Attachments/20251110-204625.png){ width=700 .center }
 
 #### Perception Training Data Generation
 
-![Synthetic Data Generation|center|700](Attachments/20251110-204657.png)
+![Synthetic Data Generation](Attachments/20251110-204657.png){ width=700 .center }
 
 ### Action Model & Scenario Configuration
 
 - 다양한 Scene 초기화와 다양한 에셋을 지원하는 ActorZoo를 입력받아 자율주행 SW의 학습과 시험에 활용할 수 있다고 주장한다.
 - 이를 통해 특정 타입의 actor 행동에 과적합되는 것을 방지할 수 있다고 한다.
-  ![Actor Model and Scenario Configuration|center|700](Attachments/20251110-205024.png)
+  ![Actor Model and Scenario Configuration](Attachments/20251110-205024.png){ width=700 .center }
 
 ## What Do We Need for Closed-loop Simulation?
 
@@ -462,7 +462,7 @@ mocs:
 - 위의 단점들로 인해 일반적으로는 폐루프 시뮬레이션에 활용하기 어렵다고 판단된다.
     - **(Comment)** [[(Talk) Tesla-Building Foundation Model For AD|테슬라의 Talk]]에서는 WorldSim NN을 만들어 사용하고 있으므로 리서치가 필요하다.
 
-![Sensor Simulator vs World Model|center|700](Attachments/20251115-124451.png)
+![Sensor Simulator vs World Model](Attachments/20251115-124451.png){ width=700 .center }
 
 - 참고 논문
     - Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models (CVPR23)
@@ -553,14 +553,14 @@ mocs:
 - 간단하고 추정할 파라미터가 적다.
 - 차량의 중량, 관성, 타이어 슬립 등을 고려하지 않기 때문에 현실과 동떨어진 결과가 나오는 경우가 많다.
 
-![Kinematic Bicycle Model|center|300](Attachments/20251115-130451.png)
+![Kinematic Bicycle Model](Attachments/20251115-130451.png){ width=300 .center }
 
 #### Dynamic Bicycle Model
 
 - 차량을 자전거와 같이 앞바퀴와 뒷바퀴만 있는 형태로 모델링한다.
     - 차량 전방과 후방의 바퀴들이 각각 하나의 바퀴로 조합된다.
 - 차량의 중량, 관성, 타이어 강성 등을 고려한 복잡한 모델이다. - 여전히 많은 가정이 들어가기 때문에 현실과 동떨어진 결과가 나오기도 한다.
-  ![Dynamic Bicycle Model|center|300](Attachments/20251115-130641.png)
+  ![Dynamic Bicycle Model](Attachments/20251115-130641.png){ width=300 .center }
 
 ## HIL
 
